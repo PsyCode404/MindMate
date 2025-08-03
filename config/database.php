@@ -1,9 +1,18 @@
 <?php
 // Database Configuration
-define('DB_HOST', 'localhost:3307');
-define('DB_USER', 'root');     // Change in production
-define('DB_PASS', '');  // No password for local development
-define('DB_NAME', 'mindmate_v');
+// If running in production (Render/Railway/etc.), read credentials from env vars
+if (getenv('DB_HOST')) {
+    define('DB_HOST', getenv('DB_HOST') . (getenv('DB_PORT') ? ':' . getenv('DB_PORT') : ''));
+    define('DB_USER', getenv('DB_USER'));
+    define('DB_PASS', getenv('DB_PASS'));
+    define('DB_NAME', getenv('DB_NAME'));
+} else {
+    // Local XAMPP defaults
+    define('DB_HOST', 'localhost:3307');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+    define('DB_NAME', 'mindmate_v');
+}
 
 // Create database connection
 function get_db_connection() {
