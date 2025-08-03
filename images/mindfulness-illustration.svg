@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Elements -->
+    <circle cx="300" cy="200" r="150" fill="#F3F4F6" opacity="0.5"/>
+    <circle cx="300" cy="200" r="120" fill="#E5E7EB" opacity="0.3"/>
+    
+    <!-- Brain Icon -->
+    <path d="M300 100 C380 100, 420 170, 420 220 C420 270, 380 320, 300 320 C220 320, 180 270, 180 220 C180 170, 220 100, 300 100" 
+          fill="#4F46E5" opacity="0.2"/>
+    <path d="M300 120 C370 120, 400 170, 400 220 C400 270, 370 300, 300 300 C230 300, 200 270, 200 220 C200 170, 230 120, 300 120" 
+          fill="#4F46E5" opacity="0.3"/>
+    
+    <!-- Decorative Elements -->
+    <circle cx="250" cy="180" r="15" fill="#4F46E5"/>
+    <circle cx="350" cy="180" r="15" fill="#4F46E5"/>
+    <path d="M270 240 C300 270, 330 240, 330 240" stroke="#4F46E5" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Abstract Thought Bubbles -->
+    <circle cx="200" cy="120" r="20" fill="#4F46E5" opacity="0.2"/>
+    <circle cx="400" cy="120" r="25" fill="#4F46E5" opacity="0.2"/>
+    <circle cx="180" cy="280" r="15" fill="#4F46E5" opacity="0.2"/>
+    <circle cx="420" cy="280" r="18" fill="#4F46E5" opacity="0.2"/>
+    
+    <!-- Connection Lines -->
+    <path d="M220 130 L240 150" stroke="#4F46E5" stroke-width="3" opacity="0.3"/>
+    <path d="M380 130 L360 150" stroke="#4F46E5" stroke-width="3" opacity="0.3"/>
+    <path d="M195 265 L220 250" stroke="#4F46E5" stroke-width="3" opacity="0.3"/>
+    <path d="M405 265 L380 250" stroke="#4F46E5" stroke-width="3" opacity="0.3"/>
+</svg>
