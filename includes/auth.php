@@ -53,7 +53,9 @@ class Auth {
             if ($stmt->execute()) {
                 $userId = $this->conn->insert_id;
                 // Start session
-                session_start();
+                if (session_status() !== PHP_SESSION_ACTIVE) {
+                    session_start();
+                }
                 $_SESSION['user_id'] = $userId;
                 $_SESSION['full_name'] = $fullName;
                 $_SESSION['email'] = $email;
@@ -99,7 +101,9 @@ class Auth {
             // Verify password
             if (password_verify($password, $user['password'])) {
                 // Start session
-                session_start();
+                if (session_status() !== PHP_SESSION_ACTIVE) {
+                    session_start();
+                }
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['email'] = $user['email'];
@@ -114,13 +118,17 @@ class Auth {
     }
 
     public function logout() {
-        session_start();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
         session_destroy();
         return ['success' => true, 'message' => 'Logout successful'];
     }
 
     public function isLoggedIn() {
-        session_start();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
         return isset($_SESSION['user_id']);
     }
 }
