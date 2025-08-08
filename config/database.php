@@ -28,11 +28,26 @@ if ($isRailway) {
             error_log("Using Railway database: " . $db['host'] . "...");
         }
     } else {
-        // Fallback to individual env vars
-        define('DB_HOST', getEnvVar('DB_HOST', 'localhost') . ':' . getEnvVar('DB_PORT', '3306'));
-        define('DB_USER', getEnvVar('DB_USER', 'root'));
-        define('DB_PASS', getEnvVar('DB_PASS', ''));
-        define('DB_NAME', getEnvVar('DB_NAME', 'mindmate_v'));
+        // Prefer Railway's standard MYSQL* variables when present
+        $mysqlHost = getEnvVar('MYSQLHOST');
+        $mysqlPort = getEnvVar('MYSQLPORT', '3306');
+        $mysqlUser = getEnvVar('MYSQLUSER');
+        $mysqlPass = getEnvVar('MYSQLPASSWORD');
+        $mysqlDb   = getEnvVar('MYSQLDATABASE');
+
+        if ($mysqlHost && $mysqlUser && $mysqlDb) {
+            define('DB_HOST', $mysqlHost . ':' . $mysqlPort);
+            define('DB_USER', $mysqlUser);
+            define('DB_PASS', $mysqlPass ?: '');
+            define('DB_NAME', $mysqlDb);
+            error_log("Using Railway MYSQL* variables for database host: " . $mysqlHost . "...");
+        } else {
+            // Fallback to individual DB_* env vars
+            define('DB_HOST', getEnvVar('DB_HOST', 'localhost') . ':' . getEnvVar('DB_PORT', '3306'));
+            define('DB_USER', getEnvVar('DB_USER', 'root'));
+            define('DB_PASS', getEnvVar('DB_PASS', ''));
+            define('DB_NAME', getEnvVar('DB_NAME', 'mindmate_v'));
+        }
     }
 } else {
     // Local development defaults - using Railway database
