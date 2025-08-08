@@ -1,0 +1,19 @@
+# Prevent unnecessary files from being copied into the image
+.git
+.gitignore
+Dockerfile
+README.md
+DEPLOYMENT.md
+node_modules/
+logs/
+*.log
+.env
+.env.local
+.env.*.local
+# Keep vendor out so the image uses the container-built vendor
+vendor/
+# OS/editor junk
+.DS_Store
+*.swp
+*.swo
+Thumbs.db

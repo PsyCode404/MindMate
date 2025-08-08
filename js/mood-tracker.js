@@ -10,6 +10,7 @@ class MoodTracker {
         };
         this.chart = null;
         this.currentPeriod = 'week';
+        // Use relative path for API endpoint to work from pages directory
         this.apiUrl = '../api/mood.php';
         
         this.initializeElements();
@@ -257,10 +258,19 @@ class MoodTracker {
             const response = await fetch(`${this.apiUrl}?limit=5`);
             
             if (!response.ok) {
-                throw new Error('Failed to fetch mood history');
+                const errorText = await response.text();
+                console.error('Server response:', errorText);
+                throw new Error(`Failed to fetch mood history: ${response.status} ${response.statusText}`);
             }
             
             const result = await response.json();
+            console.log('Mood history response:', result); // Debug log
+            
+            if (result.error) {
+                console.error('API Error:', result.error);
+                throw new Error(result.error);
+            }
+            
             const entries = result.entries || [];
             
             if (entries.length === 0) {

@@ -43,11 +43,23 @@ try {
     // Create a user array with the ID
     $user = ['id' => $userId];
 
-    // Get database connection
+    // Get database connection with detailed error handling
     $conn = get_db_connection();
     if (!$conn) {
+        $error = 'Database connection failed';
+        $errorDetails = [
+            'error' => $error,
+            'details' => [
+                'db_host' => defined('DB_HOST') ? DB_HOST : 'Not defined',
+                'db_name' => defined('DB_NAME') ? DB_NAME : 'Not defined',
+                'error_info' => $conn ? $conn->error : 'Connection object is null',
+                'timestamp' => date('Y-m-d H:i:s')
+            ]
+        ];
+        error_log(print_r($errorDetails, true));
         http_response_code(500);
-        echo json_encode(['error' => 'Database connection failed']);
+        header('Content-Type: application/json');
+        echo json_encode($errorDetails);
         exit();
     }
 
@@ -58,9 +70,13 @@ try {
         case 'GET':
             // Get mood entries for the current user
             try {
+                error_log('GET request received. User ID: ' . $userId);
+                
                 // Check if a specific period is requested
                 $period = isset($_GET['period']) ? $_GET['period'] : 'all';
                 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+                
+                error_log("Fetching mood entries. Period: $period, Limit: " . ($limit ?: 'none'));
                 
                 // Build the SQL query based on the period
                 $sql = "SELECT * FROM mood_logs WHERE user_id = ?";
@@ -90,10 +106,27 @@ try {
                     $sql .= " LIMIT " . $limit;
                 }
                 
+                error_log("Executing SQL: $sql");
+                
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("i", $user['id']);
-                $stmt->execute();
+                if (!$stmt) {
+                    throw new Exception("Prepare failed: " . $conn->error);
+                }
+                
+                $bindResult = $stmt->bind_param("i", $user['id']);
+                if (!$bindResult) {
+                    throw new Exception("Bind param failed: " . $stmt->error);
+                }
+                
+                $executeResult = $stmt->execute();
+                if (!$executeResult) {
+                    throw new Exception("Execute failed: " . $stmt->error);
+                }
+                
                 $result = $stmt->get_result();
+                if (!$result) {
+                    throw new Exception("Get result failed: " . $stmt->error);
+                }
                 
                 $entries = [];
                 while ($row = $result->fetch_assoc()) {
@@ -114,7 +147,16 @@ try {
                         5 => 'amazing'
                     ];
                     
-                    $row['mood'] = $moodNames[$row['mood_level']] ?? 'unknown';
+                    // Safely get mood name with fallback to 'unknown'
+                    $moodLevel = (int)$row['mood_level'];
+                    if ($moodLevel >= 1 && $moodLevel <= 5) {
+                        $row['mood'] = $moodNames[$moodLevel];
+                    } else {
+                        // For values outside 1-5, map to the closest valid mood
+                        if ($moodLevel < 1) $row['mood'] = 'rough';
+                        elseif ($moodLevel > 5) $row['mood'] = 'amazing';
+                        else $row['mood'] = 'unknown';
+                    }
                     
                     $entries[] = $row;
                 }

@@ -101,6 +101,6 @@ include '../includes/header.php';
     </div>
 </div>
 
-<script src="../js/mood-tracker.js"></script>
+<script src="../js/mood-tracker.js?v=<?php echo time(); ?>"></script>
 
 <?php include '../includes/footer.php'; ?>
