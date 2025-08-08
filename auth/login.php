@@ -7,7 +7,7 @@ $success = '';
 
 // Check if user is already logged in
 if ($auth->isLoggedIn()) {
-    header('Location: /mindmate/pages/chat.php');
+    header('Location: /pages/chat.php');
     exit();
 }
 
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $auth->login($email, $password);
     
     if ($result['success']) {
-        header('Location: /mindmate/pages/chat.php');
+        header('Location: /pages/chat.php');
         exit();
     } else {
         $error = $result['message'];
@@ -34,14 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Login - MindMate</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/mindmate/css/auth.css">
+    <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
 
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <a href="/mindmate/index.php" class="logo">
+            <a href="/index.php" class="logo">
                 <i class="fas fa-brain"></i>
                 <span>MindMate</span>
             </a>
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Sign in to continue</p>
         </div>
 
-        <form action="/mindmate/auth/login.php" method="POST">
+        <form action="/auth/login.php" method="POST">
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <div class="input-wrapper">
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="checkbox" id="remember" name="remember">
                     <label for="remember">Remember me</label>
                 </div>
-                <a href="/mindmate/auth/forgot-password.php" class="forgot-password">Forgot Password?</a>
+                <a href="/auth/forgot-password.php" class="forgot-password">Forgot Password?</a>
             </div>
 
             <?php if ($error): ?>
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn-auth">Sign In</button>
 
             <div class="auth-footer">
-                <p>Don't have an account? <a href="/mindmate/auth/register.php">Sign Up</a></p>
+                <p>Don't have an account? <a href="/auth/register.php">Sign Up</a></p>
             </div>
 
             <div class="social-login">
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <div class="auth-footer">
-            <p>Don't have an account? <a href="/mindmate/auth/register.php">Sign Up</a></p>
+            <p>Don't have an account? <a href="/auth/register.php">Sign Up</a></p>
         </div>
     </div>
 </div>

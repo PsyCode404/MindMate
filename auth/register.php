@@ -7,7 +7,7 @@ $success = '';
 
 // Check if user is already logged in
 if ($auth->isLoggedIn()) {
-    header('Location: /mindmate/pages/chat.php');
+    header('Location: /pages/chat.php');
     exit();
 }
 
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $auth->register($fullName, $email, $password);
     
     if ($result['success']) {
-        header('Location: /mindmate/pages/chat.php');
+        header('Location: /pages/chat.php');
         exit();
     } else {
         $error = $result['message'];
@@ -35,14 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Register - MindMate</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/mindmate/css/auth.css">
+    <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
 
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <a href="/mindmate/index.php" class="logo">
+            <a href="/index.php" class="logo">
                 <i class="fas fa-brain"></i>
                 <span>MindMate</span>
             </a>
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Join MindMate today</p>
         </div>
 
-        <form action="/mindmate/auth/register.php" method="POST">
+        <form action="/auth/register.php" method="POST">
             <div class="form-group">
                 <label for="name">Name</label>
                 <div class="input-wrapper">
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <div class="remember-me">
                     <input type="checkbox" id="terms" name="terms" required>
-                    <label for="terms">I agree to the <a href="/mindmate/terms.php">Terms</a> and <a href="/mindmate/privacy.php">Privacy Policy</a></label>
+                    <label for="terms">I agree to the <a href="/terms.php">Terms</a> and <a href="/privacy.php">Privacy Policy</a></label>
                 </div>
             </div>
 
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn-auth">Create Account</button>
 
             <div class="auth-footer">
-                <p>Already have an account? <a href="/mindmate/auth/login.php">Log In</a></p>
+                <p>Already have an account? <a href="/auth/login.php">Log In</a></p>
             </div>
 
             <div class="social-login">

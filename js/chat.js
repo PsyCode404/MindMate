@@ -126,7 +126,7 @@ class ChatManager {
 
     async fetchBotResponse(userMessage) {
         try {
-            const response = await fetch(window.location.origin + '/mindmate/api/chat.php', {
+            const response = await fetch(window.location.origin + '/api/chat.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
