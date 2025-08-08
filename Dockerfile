@@ -1,9 +1,21 @@
 # MindMate - PHP 8.2 + Apache for Railway
 FROM php:8.2-apache
 
-# Install PHP extensions needed by the app (mysqli, pdo_mysql)
-RUN docker-php-ext-install mysqli pdo pdo_mysql \
-    && a2enmod rewrite
+# Install system packages and PHP extensions
+# - git, unzip, libzip: required for Composer to download/extract packages
+# - zip extension: commonly needed and avoids Composer extraction issues
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        libzip-dev \
+    && docker-php-ext-install \
+        zip \
+        mysqli \
+        pdo \
+        pdo_mysql \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
@@ -17,6 +29,7 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 
 # Install PHP dependencies (no dev) with optimized autoloader
+ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
 # Copy application source
