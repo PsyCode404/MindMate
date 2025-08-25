@@ -1,81 +1,5 @@
 <?php
-// File: api/chat.php
-// Handles chat requests and sends them to GroqCloud API
-
-// Suppress PHP errors from being displayed as HTML
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
-
-// Try to load .env file if it exists (for local development)
-if (file_exists(__DIR__ . '/../.env')) {
-    $envFile = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($envFile as $line) {
-        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value, '"');
-        }
-    }
-}
-
-// Enable CORS
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Max-Age: 86400'); // 24 hours
-
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit();
-}
-
-// Wrap everything in a try-catch to ensure JSON responses
-try {
-    // Get the incoming JSON body
-    $jsonPayload = file_get_contents('php://input');
-    $data = json_decode($jsonPayload, true);
-
-    // Log the incoming request for debugging
-    error_log('Incoming request: ' . $jsonPayload);
-
-    if (!isset($data['message'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'No message provided', 'debug' => ['received_data' => $data]]);
-        exit();
-    }
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Server error', 'message' => $e->getMessage()]);
-    exit();
-}
-
-try {
-    $user_message = $data['message'];
-
-    // Use environment variable for Groq API Key
-    $groq_api_key = $_ENV['GROQ_API_KEY'] ?? null;
-    
-    if (!$groq_api_key) {
-        throw new Exception('Groq API key not configured. Please set GROQ_API_KEY environment variable.');
-    }
-    
-    // Call Groq API
-    $reply = callGroqAPI($user_message, $groq_api_key);
-
-    echo json_encode(['reply' => $reply]);
-
-} catch (Exception $e) {
-    error_log('Chat API Error: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => 'Server error', 'message' => $e->getMessage()]);
-}
+// Test script for Groq API integration
 
 /**
  * Call Groq API for AI-generated responses
@@ -162,3 +86,22 @@ Respond in a caring, therapeutic manner that makes the user feel heard and suppo
 
     return trim($data['choices'][0]['message']['content']);
 }
+
+// Test the API call
+try {
+    $testMessage = "Hello, I'm feeling anxious today";
+    $apiKey = 'YOUR_GROQ_API_KEY_HERE'; // Replace with your actual API key for testing
+    
+    echo "Testing Groq API integration...\n";
+    echo "User message: " . $testMessage . "\n\n";
+    
+    $response = callGroqAPI($testMessage, $apiKey);
+    
+    echo "AI Response:\n";
+    echo $response . "\n";
+    echo "\n✅ Test successful!\n";
+    
+} catch (Exception $e) {
+    echo "❌ Test failed: " . $e->getMessage() . "\n";
+}
+?>
