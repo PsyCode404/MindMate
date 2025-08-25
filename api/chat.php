@@ -112,18 +112,12 @@ try {
 
     // Wit.ai returns JSON with intents, entities, and traits
     $wit_data = json_decode($response, true);
-    $reply = '';
-
-    // For a psychiatrist functionality, we'll need to process the response appropriately
-    // This is a placeholder implementation - you would need to implement your own logic
-    // to generate appropriate psychiatric responses based on the intents/entities detected
-
-    if (isset($wit_data['traits']['wit$message_body'][0]['value'])) {
-        $reply = $wit_data['traits']['wit$message_body'][0]['value'];
-    } else {
-        // Fallback response if no message body trait is found
-        $reply = "I understand you're sharing your thoughts with me. As a psychiatrist, I'm here to listen and help. Could you tell me more about what's on your mind?";
-    }
+    
+    // Log the actual Wit.ai response for debugging
+    error_log('Wit.ai response: ' . json_encode($wit_data));
+    
+    // Generate psychiatrist response based on user message and Wit.ai analysis
+    $reply = generatePsychiatristResponse($user_message, $wit_data);
 
     echo json_encode(['reply' => $reply]);
 
@@ -131,4 +125,71 @@ try {
     error_log('Chat API Error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Server error', 'message' => $e->getMessage()]);
+}
+
+/**
+ * Generate psychiatrist response based on user message and Wit.ai analysis
+ */
+function generatePsychiatristResponse($userMessage, $witData) {
+    // Analyze the user's message for emotional content and mental health indicators
+    $userMessage = strtolower($userMessage);
+    
+    // Check for specific mental health keywords and respond appropriately
+    if (strpos($userMessage, 'anxious') !== false || strpos($userMessage, 'anxiety') !== false) {
+        return "I hear that you're experiencing anxiety. That's a very common feeling, and you're not alone in this. Can you tell me what specific situations or thoughts tend to trigger your anxiety? Understanding these patterns can help us work together to develop coping strategies.";
+    }
+    
+    if (strpos($userMessage, 'depressed') !== false || strpos($userMessage, 'depression') !== false || strpos($userMessage, 'sad') !== false) {
+        return "Thank you for sharing that with me. Depression can feel overwhelming, but reaching out is an important first step. How long have you been feeling this way? Are there particular times of day or situations when these feelings are stronger?";
+    }
+    
+    if (strpos($userMessage, 'stress') !== false || strpos($userMessage, 'stressed') !== false) {
+        return "Stress is something many people struggle with, especially in today's world. I'd like to help you explore what's causing this stress and find healthy ways to manage it. What are the main sources of stress in your life right now?";
+    }
+    
+    if (strpos($userMessage, 'sleep') !== false || strpos($userMessage, 'insomnia') !== false || strpos($userMessage, 'tired') !== false) {
+        return "Sleep issues can significantly impact our mental health and daily functioning. Poor sleep often creates a cycle where we feel more stressed or anxious, which then makes it harder to sleep. Can you describe your current sleep patterns and what might be keeping you awake?";
+    }
+    
+    if (strpos($userMessage, 'relationship') !== false || strpos($userMessage, 'partner') !== false || strpos($userMessage, 'family') !== false) {
+        return "Relationships are fundamental to our wellbeing, and it's natural to have challenges in this area. I'm here to help you navigate these feelings. Can you tell me more about what's happening in your relationships that's concerning you?";
+    }
+    
+    if (strpos($userMessage, 'work') !== false || strpos($userMessage, 'job') !== false || strpos($userMessage, 'career') !== false) {
+        return "Work-related stress and concerns are very common. Our professional lives can significantly impact our mental health. What specific aspects of your work situation are troubling you? Is it the workload, relationships with colleagues, or perhaps uncertainty about your career path?";
+    }
+    
+    if (strpos($userMessage, 'angry') !== false || strpos($userMessage, 'anger') !== false || strpos($userMessage, 'frustrated') !== false) {
+        return "Anger and frustration are valid emotions that often signal that something important to us isn't being met or respected. It's good that you're acknowledging these feelings. Can you help me understand what situations or thoughts tend to trigger these feelings for you?";
+    }
+    
+    if (strpos($userMessage, 'lonely') !== false || strpos($userMessage, 'alone') !== false || strpos($userMessage, 'isolated') !== false) {
+        return "Loneliness can be one of the most painful experiences we face as humans. It takes courage to reach out and talk about these feelings. You're taking an important step by sharing this with me. Can you tell me more about when you feel most lonely?";
+    }
+    
+    // Check for positive expressions
+    if (strpos($userMessage, 'better') !== false || strpos($userMessage, 'good') !== false || strpos($userMessage, 'happy') !== false) {
+        return "I'm glad to hear you're feeling better. It's important to acknowledge and celebrate these positive moments. What do you think has contributed to this improvement in how you're feeling? Understanding what helps can be valuable for maintaining your wellbeing.";
+    }
+    
+    // Check for greetings
+    if (strpos($userMessage, 'hello') !== false || strpos($userMessage, 'hi') !== false || strpos($userMessage, 'hey') !== false) {
+        return "Hello! I'm glad you're here. I'm Dr. MindMate, and I'm here to provide you with a safe, supportive space to talk about whatever is on your mind. What would you like to discuss today?";
+    }
+    
+    // Check for thanks
+    if (strpos($userMessage, 'thank') !== false || strpos($userMessage, 'thanks') !== false) {
+        return "You're very welcome. It's my privilege to be here with you on this journey. Remember, seeking support and working on your mental health takes courage. How are you feeling about our conversation so far?";
+    }
+    
+    // Default empathetic response for general messages
+    $responses = [
+        "I appreciate you sharing that with me. Your feelings and experiences are valid and important. Can you tell me more about what's been on your mind lately?",
+        "Thank you for opening up. It sounds like you have a lot going on. What feels most pressing or important for you to talk about right now?",
+        "I'm here to listen and support you. What you're experiencing matters, and I want to understand better. Can you help me understand what's been most challenging for you recently?",
+        "It takes strength to reach out and talk about personal matters. I'm honored that you're sharing with me. What would be most helpful for us to focus on today?",
+        "I can hear that you're going through something significant. Your willingness to talk about it is an important step. What aspects of your situation feel most overwhelming or confusing right now?"
+    ];
+    
+    return $responses[array_rand($responses)];
 }
