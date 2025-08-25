@@ -10,10 +10,18 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
+// Enable CORS
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Max-Age: 86400'); // 24 hours
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -22,10 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Get the incoming JSON body
-$data = json_decode(file_get_contents('php://input'), true);
+$jsonPayload = file_get_contents('php://input');
+$data = json_decode($jsonPayload, true);
+
+// Log the incoming request for debugging
+error_log('Incoming request: ' . $jsonPayload);
+
 if (!isset($data['message'])) {
     http_response_code(400);
-    echo json_encode(['error' => 'No message provided']);
+    echo json_encode(['error' => 'No message provided', 'debug' => ['received_data' => $data]]);
     exit();
 }
 
@@ -41,9 +54,17 @@ $params = http_build_query([
 
 $ch = curl_init($endpoint . '?' . $params);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For testing only, remove in production
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); // For testing only, remove in production
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: Bearer ' . $wit_server_token
+    'Authorization: Bearer ' . $wit_server_token,
+    'Content-Type: application/json',
+    'Accept: application/json'
 ]);
+
+// Set timeout values
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
 
 $response = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -51,14 +72,26 @@ $error = curl_error($ch);
 curl_close($ch);
 
 if ($error) {
+    error_log('cURL Error: ' . $error);
     http_response_code(500);
-    echo json_encode(['error' => 'cURL error: ' . $error]);
+    echo json_encode([
+        'error' => 'cURL error',
+        'message' => $error,
+        'endpoint' => $endpoint,
+        'params' => $params
+    ]);
     exit();
 }
 
 if ($http_code !== 200) {
-    http_response_code($http_code);
-    echo json_encode(['error' => 'Wit.ai API error', 'response' => $response]);
+    error_log("Wit.ai API Error ($http_code): " . $response);
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Wit.ai API error',
+        'status_code' => $http_code,
+        'response' => $response,
+        'endpoint' => $endpoint
+    ]);
     exit();
 }
 

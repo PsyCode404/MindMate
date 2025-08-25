@@ -126,25 +126,42 @@ class ChatManager {
 
     async fetchBotResponse(userMessage) {
         try {
-            const response = await fetch(window.location.origin + '/api/chat.php', {
+            console.log('Sending message to server:', userMessage);
+            const response = await fetch('/api/chat.php', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({ message: userMessage })
             });
+            
+            console.log('Response status:', response.status);
             const data = await response.json();
+            console.log('Response data:', data);
+            
             this.hideTypingIndicator();
-            if (data.reply) {
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+            
+            if (data.error) {
+                console.error('API Error:', data);
+                this.addBotMessage(`I'm having trouble connecting to the chat service. Please try again later.`);
+                if (data.debug) {
+                    console.error('Debug info:', data.debug);
+                }
+            } else if (data.reply) {
                 this.addBotMessage(data.reply);
-            } else if (data.error) {
-                this.addBotMessage('Sorry, there was an error: ' + data.error);
             } else {
-                this.addBotMessage('Sorry, I did not understand the response.');
+                console.warn('Unexpected response format:', data);
+                this.addBotMessage("I'm here to help. Could you rephrase that?");
             }
         } catch (error) {
+            console.error('Error in fetchBotResponse:', error);
             this.hideTypingIndicator();
-            this.addBotMessage('Sorry, there was a network error.');
+            this.addBotMessage(`I'm having trouble connecting right now. Please try again in a moment. (${error.message})`);
         }
     }
 
