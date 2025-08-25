@@ -73,7 +73,7 @@ class ChatManager {
         // Show typing indicator
         this.showTypingIndicator();
 
-        // Send message to backend (Hugging Face AI)
+        // Send message to backend (Wit.ai)
         await this.fetchBotResponse(message);
     }
 

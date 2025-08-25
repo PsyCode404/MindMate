@@ -1,6 +1,6 @@
 <?php
 // File: api/chat.php
-// Handles chat requests and proxies them to Hugging Face Zephyr-7B-Beta
+// Handles chat requests and proxies them to Wit.ai
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -31,29 +31,18 @@ if (!isset($data['message'])) {
 
 $user_message = $data['message'];
 
-// Use environment variable for Hugging Face API key
-$hf_api_key = $_ENV['HF_API_KEY'] ?? null;
-if (!$hf_api_key || $hf_api_key === 'YOUR_HF_API_KEY') {
-    // TODO: Insert your Hugging Face API key in your environment or .env file
-    http_response_code(500);
-    echo json_encode(['error' => 'Hugging Face API key not set. Set HF_API_KEY in your environment.']);
-    exit();
-}
+// Use environment variable for Wit.ai Server Access Token
+$wit_server_token = $_ENV['WIT_SERVER_TOKEN'] ?? 'IQXJAJ62K72LTF3HQO6OWAL5DYGMG3YL';
 
-$endpoint = 'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta';
-$prompt = "<|system|>\nYou are MindMate, a supportive AI therapist. Always respond with empathy, encouragement, and practical guidance. Stay on topic and help users with their mental wellness.\n<|user|>\n" . $user_message . "\n<|assistant|>";
-
-$payload = json_encode([
-    'inputs' => $prompt
+$endpoint = 'https://api.wit.ai/message';
+$params = http_build_query([
+    'q' => $user_message
 ]);
 
-$ch = curl_init($endpoint);
+$ch = curl_init($endpoint . '?' . $params);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: Bearer ' . $hf_api_key,
-    'Content-Type: application/json'
+    'Authorization: Bearer ' . $wit_server_token
 ]);
 
 $response = curl_exec($ch);
@@ -69,27 +58,23 @@ if ($error) {
 
 if ($http_code !== 200) {
     http_response_code($http_code);
-    echo json_encode(['error' => 'Hugging Face API error', 'response' => $response]);
+    echo json_encode(['error' => 'Wit.ai API error', 'response' => $response]);
     exit();
 }
 
-// Hugging Face returns an array with 'generated_text' or similar
-$hf_data = json_decode($response, true);
+// Wit.ai returns JSON with intents, entities, and traits
+$wit_data = json_decode($response, true);
 $reply = '';
-if (isset($hf_data[0]['generated_text'])) {
-    $raw = $hf_data[0]['generated_text'];
-} else if (isset($hf_data['generated_text'])) {
-    $raw = $hf_data['generated_text'];
-} else {
-    $raw = $response;
-}
 
-// Extract only the assistant's response (after <|assistant|>)
-$assistant_pos = strpos($raw, '<|assistant|>');
-if ($assistant_pos !== false) {
-    $reply = trim(substr($raw, $assistant_pos + strlen('<|assistant|>')));
+// For a psychiatrist functionality, we'll need to process the response appropriately
+// This is a placeholder implementation - you would need to implement your own logic
+// to generate appropriate psychiatric responses based on the intents/entities detected
+
+if (isset($wit_data['traits']['wit$message_body'][0]['value'])) {
+    $reply = $wit_data['traits']['wit$message_body'][0]['value'];
 } else {
-    $reply = trim($raw);
+    // Fallback response if no message body trait is found
+    $reply = "I understand you're sharing your thoughts with me. As a psychiatrist, I'm here to listen and help. Could you tell me more about what's on your mind?";
 }
 
 echo json_encode(['reply' => $reply]);
