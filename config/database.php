@@ -1,123 +1,131 @@
 <?php
 // Database Configuration
 
+// Load environment variables from .env file
+require_once __DIR__ . '/../load_env.php';
+
 // Function to get environment variable with fallback
 function getEnvVar($key, $default = null) {
     $value = getenv($key);
     return $value !== false ? $value : $default;
 }
 
-// Check if running in Railway environment
-$isRailway = getenv('RAILWAY') === 'true' || getenv('RAILWAY_ENVIRONMENT') || getenv('DB_HOST');
+// Database connection configuration
+$dbConfig = [];
 
-if ($isRailway) {
-    // Railway provides a DATABASE_URL in the format: 
-    // mysql://user:password@hostname:port/railway
-    if (getenv('DATABASE_URL')) {
-        $db = parse_url(getenv('DATABASE_URL'));
-        
-        if ($db === false) {
-            error_log("Failed to parse DATABASE_URL");
-        } else {
-            define('DB_HOST', $db['host'] . (isset($db['port']) ? ':' . $db['port'] : ':3306'));
-            define('DB_USER', $db['user']);
-            define('DB_PASS', $db['pass']);
-            define('DB_NAME', ltrim($db['path'], '/'));
-            
-            // Log the parsed database host (without credentials) for debugging
-            error_log("Using Railway database: " . $db['host'] . "...");
-        }
-    } else {
-        // Prefer Railway's standard MYSQL* variables when present
-        $mysqlHost = getEnvVar('MYSQLHOST');
-        $mysqlPort = getEnvVar('MYSQLPORT', '3306');
-        $mysqlUser = getEnvVar('MYSQLUSER');
-        $mysqlPass = getEnvVar('MYSQLPASSWORD');
-        $mysqlDb   = getEnvVar('MYSQLDATABASE');
-
-        if ($mysqlHost && $mysqlUser && $mysqlDb) {
-            define('DB_HOST', $mysqlHost . ':' . $mysqlPort);
-            define('DB_USER', $mysqlUser);
-            define('DB_PASS', $mysqlPass ?: '');
-            define('DB_NAME', $mysqlDb);
-            error_log("Using Railway MYSQL* variables for database host: " . $mysqlHost . "...");
-        } else {
-            // Fallback to individual DB_* env vars
-            define('DB_HOST', getEnvVar('DB_HOST', 'localhost') . ':' . getEnvVar('DB_PORT', '3306'));
-            define('DB_USER', getEnvVar('DB_USER', 'root'));
-            define('DB_PASS', getEnvVar('DB_PASS', ''));
-            define('DB_NAME', getEnvVar('DB_NAME', 'mindmate_v'));
-        }
-    }
-} else {
-    // Local development defaults - using Railway database
-    define('DB_HOST', getEnvVar('MYSQLHOST', 'localhost') . ':' . getEnvVar('MYSQLPORT', '3306'));
-    define('DB_USER', getEnvVar('MYSQLUSER', 'root'));
-    define('DB_PASS', getEnvVar('MYSQLPASSWORD', ''));
-    define('DB_NAME', getEnvVar('MYSQLDATABASE', 'railway'));
+// Force use of individual MYSQL* variables (ignore DATABASE_URL to avoid conflicts)
+if (true) {
+    $dbConfig['host'] = getEnvVar('MYSQLHOST', getEnvVar('DB_HOST', 'localhost'));
+    $dbConfig['port'] = getEnvVar('MYSQLPORT', getEnvVar('DB_PORT', '3306'));
+    $dbConfig['user'] = getEnvVar('MYSQLUSER', getEnvVar('DB_USER', 'root'));
+    $dbConfig['pass'] = getEnvVar('MYSQLPASSWORD', getEnvVar('DB_PASS', ''));
+    $dbConfig['name'] = getEnvVar('MYSQLDATABASE', getEnvVar('DB_NAME', 'mindmate'));
     
-    error_log("Using database configuration:");
-    error_log("- Host: " . DB_HOST);
-    error_log("- Database: " . DB_NAME);
-    error_log("- User: " . DB_USER);
+    error_log("Using environment variables for database connection to: " . $dbConfig['host'] . "...");
 }
 
-// Create database connection
+// SSL Configuration
+$dbConfig['ssl'] = getEnvVar('MYSQL_SSL', 'false') === 'true';
+$dbConfig['ssl_ca'] = getEnvVar('MYSQL_SSL_CA', '/var/www/html/isrgrootx1.pem');
+
+// Define constants for backward compatibility
+define('DB_HOST', $dbConfig['host'] . ':' . $dbConfig['port']);
+define('DB_USER', $dbConfig['user']);
+define('DB_PASS', $dbConfig['pass']);
+define('DB_NAME', $dbConfig['name']);
+define('DB_SSL', $dbConfig['ssl']);
+define('DB_SSL_CA', $dbConfig['ssl_ca']);
+
+error_log("Database configuration loaded:");
+error_log("- Host: " . $dbConfig['host'] . ":" . $dbConfig['port']);
+error_log("- Database: " . $dbConfig['name']);
+error_log("- User: " . $dbConfig['user']);
+error_log("- SSL: " . ($dbConfig['ssl'] ? 'enabled' : 'disabled'));
+
+// Create database connection using PDO with SSL support
 function get_db_connection() {
     try {
-        // Log connection attempt (without sensitive data)
         error_log("Attempting to connect to database on " . DB_HOST);
         
-        // For Railway, we need to ensure we're using the correct port and SSL
-        $isRailway = getenv('RAILWAY') === 'true' || getenv('RAILWAY_ENVIRONMENT') || getenv('DB_HOST');
+        // Build DSN for PDO
+        $host = explode(':', DB_HOST)[0];
+        $port = explode(':', DB_HOST)[1] ?? 3306;
+        $dsn = "mysql:host={$host};port={$port};dbname=" . DB_NAME . ";charset=utf8mb4";
         
-        if ($isRailway) {
-            // Force MySQLi to use TCP connection
-            $host = DB_HOST;
-            if (strpos($host, ':') === false) {
-                $host .= ':3306'; // Default MySQL port if not specified
+        // PDO options
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
+        ];
+        
+        // Add SSL options if SSL is enabled
+        if (DB_SSL) {
+            error_log("SSL connection enabled for TiDB");
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            
+            // Add CA certificate if specified and file exists
+            if (DB_SSL_CA && file_exists(DB_SSL_CA)) {
+                $options[PDO::MYSQL_ATTR_SSL_CA] = DB_SSL_CA;
+                error_log("Using SSL CA certificate: " . DB_SSL_CA);
+            } else {
+                error_log("SSL CA certificate not found or not specified, using system default");
             }
-            
-            // Create connection with error reporting
-            $conn = new mysqli();
-            $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-            
-            // Connect with error suppression to handle errors ourselves
-            @$conn->real_connect($host, DB_USER, DB_PASS, DB_NAME);
-            
-            if ($conn->connect_error) {
-                throw new Exception("Connection failed: " . $conn->connect_error);
-            }
-            
-            // Set SSL if available
-            if (function_exists('mysqli_ssl_set')) {
-                $conn->ssl_set(null, null, null, null, null);
-            }
-        } else {
-            // Local connection
-            $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
         }
+        
+        // Create PDO connection
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        
+        error_log("Database connection successful using PDO");
+        return $pdo;
+        
+    } catch (PDOException $e) {
+        $error = "Database connection failed: " . $e->getMessage();
+        error_log($error);
+        error_log("Connection details - Host: " . $host . ":" . $port . ", Database: " . DB_NAME);
+        throw new Exception($error);
+    }
+}
+
+// Legacy MySQLi connection function for backward compatibility
+function get_mysqli_connection() {
+    try {
+        error_log("Creating MySQLi connection for backward compatibility");
+        
+        $host = explode(':', DB_HOST)[0];
+        $port = explode(':', DB_HOST)[1] ?? 3306;
+        
+        // Create MySQLi connection
+        $conn = new mysqli();
+        
+        // Set SSL options if enabled
+        if (DB_SSL) {
+            $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+            if (DB_SSL_CA && file_exists(DB_SSL_CA)) {
+                $conn->ssl_set(null, null, DB_SSL_CA, null, null);
+            }
+        }
+        
+        // Connect
+        $conn->real_connect($host, DB_USER, DB_PASS, DB_NAME, $port);
         
         if ($conn->connect_error) {
-            $error = "Connection failed: " . $conn->connect_error . 
-                    " [Error No: " . $conn->connect_errno . "]";
-            error_log($error);
-            throw new Exception($error);
+            throw new Exception("MySQLi connection failed: " . $conn->connect_error);
         }
         
-        // Set charset to utf8mb4
+        // Set charset
         if (!$conn->set_charset("utf8mb4")) {
-            error_log("Error loading character set utf8mb4: " . $conn->error);
-        } else {
-            error_log("Database connection successful. Current character set: " . $conn->character_set_name());
+            error_log("Error setting charset utf8mb4: " . $conn->error);
         }
         
+        error_log("MySQLi connection successful");
         return $conn;
+        
     } catch (Exception $e) {
-        $error = "Database connection error: " . $e->getMessage();
+        $error = "MySQLi connection error: " . $e->getMessage();
         error_log($error);
-        error_log("Stack trace: " . $e->getTraceAsString());
-        return false;
+        throw new Exception($error);
     }
 }
 
