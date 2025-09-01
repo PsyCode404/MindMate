@@ -104,7 +104,7 @@ Guidelines:
 Respond in a caring, therapeutic manner that makes the user feel heard and supported.";
 
     $payload = [
-        'model' => 'llama3-8b-8192', // Fast Groq model
+        'model' => 'llama-3.1-8b-instant', // Updated model (llama3-8b-8192 deprecated)
         'messages' => [
             [
                 'role' => 'system',
