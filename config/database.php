@@ -42,46 +42,49 @@ error_log("- Database: " . $dbConfig['name']);
 error_log("- User: " . $dbConfig['user']);
 error_log("- SSL: " . ($dbConfig['ssl'] ? 'enabled' : 'disabled'));
 
-// Create database connection using PDO with SSL support
+// Create database connection using MySQLi with SSL support
 function get_db_connection() {
     try {
         error_log("Attempting to connect to database on " . DB_HOST);
         
-        // Build DSN for PDO
         $host = explode(':', DB_HOST)[0];
         $port = explode(':', DB_HOST)[1] ?? 3306;
-        $dsn = "mysql:host={$host};port={$port};dbname=" . DB_NAME . ";charset=utf8mb4";
         
-        // PDO options
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
-        ];
+        // Create MySQLi connection
+        $conn = new mysqli();
         
-        // Add SSL options if SSL is enabled
+        // Set SSL options if enabled
         if (DB_SSL) {
             error_log("SSL connection enabled for TiDB");
-            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
             
             // Add CA certificate if specified and file exists
             if (DB_SSL_CA && file_exists(DB_SSL_CA)) {
-                $options[PDO::MYSQL_ATTR_SSL_CA] = DB_SSL_CA;
+                $conn->ssl_set(null, null, DB_SSL_CA, null, null);
                 error_log("Using SSL CA certificate: " . DB_SSL_CA);
             } else {
                 error_log("SSL CA certificate not found or not specified, using system default");
             }
         }
         
-        // Create PDO connection
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        // Connect
+        $conn->real_connect($host, DB_USER, DB_PASS, DB_NAME, $port);
         
-        error_log("Database connection successful using PDO");
-        return $pdo;
+        if ($conn->connect_error) {
+            throw new Exception("MySQLi connection failed: " . $conn->connect_error);
+        }
         
-    } catch (PDOException $e) {
-        $error = "Database connection failed: " . $e->getMessage();
+        // Set charset
+        if (!$conn->set_charset("utf8mb4")) {
+            error_log("Error setting charset utf8mb4: " . $conn->error);
+        } else {
+            error_log("Database connection successful using MySQLi");
+        }
+        
+        return $conn;
+        
+    } catch (Exception $e) {
+        $error = "Database connection error: " . $e->getMessage();
         error_log($error);
         error_log("Connection details - Host: " . $host . ":" . $port . ", Database: " . DB_NAME);
         throw new Exception($error);
